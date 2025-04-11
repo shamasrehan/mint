@@ -1,0 +1,37 @@
+{
+  "name": "smart-contract-generator",
+  "version": "1.0.0",
+  "description": "AI-powered smart contract generation platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "test": "jest",
+    "lint": "eslint src/**/*.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "openai": "^4.3.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.48.0",
+    "jest": "^29.6.4",
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "smart-contracts",
+    "blockchain",
+    "ai",
+    "solidity",
+    "vyper",
+    "rust",
+    "code-generation"
+  ],
+  "author": "",
+  "license": "MIT"
+}

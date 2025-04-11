@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartContractHub</title>
+  
+  <!-- Prism.js for syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-solidity.min.js"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <!-- TOP HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <!-- Logo -->
+      <div class="logo-container">
+        <i class="fas fa-cube logo-icon"></i>
+        <span class="header-logo-text">SmartContractHub</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="connect-btn">
+        <i class="fas fa-plug"></i>
+        <span>Connect Wallet</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Left Collapsible Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <ul class="menu">
+      <li class="menu-item active" onclick="showPanel('generatorPanel', event)">
+        <i class="fas fa-magic"></i> Contract Generator
+      </li>
+      <li class="menu-item" onclick="showPanel('examplePanel1', event)">
+        <i class="fas fa-users"></i> My Agents
+      </li>
+      <li class="menu-item" onclick="showPanel('examplePanel2', event)">
+        <i class="fas fa-robot"></i> My Oracles
+      </li>
+    </ul>
+    <!-- Collapse Button -->
+    <button class="collapse-btn" onclick="toggleSidebar()">
+      <i class="fas fa-chevron-left" id="sidebar-toggle-icon"></i>
+    </button>
+  </div>
+  
+  <!-- Main Content Panels -->
+  <div class="generator-panel" id="generatorPanel">
+    <!-- Left half: Approval/Preview Section -->
+    <div class="approval-section" id="approvalSection">
+      <div class="tab-container">
+        <div class="tabs">
+          <button class="tab-button active" onclick="switchTab(event, 'contract-preview')">Contract Preview</button>
+          <button class="tab-button" onclick="switchTab(event, 'my-contracts')">My Contracts</button>
+          <button class="tab-button" onclick="switchTab(event, 'audit-report')">Audit Report</button>
+          <button class="tab-button" onclick="switchTab(event, 'template-dapps')">Template Dapps</button>
+        </div>
+      </div>
+
+      <!-- TAB CONTENT: Contract Preview -->
+      <div id="contract-preview" class="tab-content active">
+        <div class="view-switcher">
+          <button class="view-button" onclick="setViewMode(event, 'natural')">Natural</button>
+          <button class="view-button" onclick="setViewMode(event, 'json')">JSON</button>
+          <button class="view-button active" onclick="setViewMode(event, 'solidity')">Solidity</button>
+          <button class="view-button" onclick="setViewMode(event, 'abi')">ABI</button>
+        </div>
+        <div id="finalContract" class="code-container"></div>
+        <div class="approval-buttons">
+          <button class="action-btn approve-btn" onclick="approveContract()">
+            <i class="fas fa-check-circle"></i>
+            <span>Approve</span>
+          </button>
+          <button class="action-btn edit-btn" onclick="requestChanges()">
+            <i class="fas fa-edit"></i>
+            <span>Request Changes</span>
+          </button>
+          <button class="action-btn compile-btn" onclick="compileContract()">
+            <i class="fas fa-cogs"></i>
+            <span>Compile</span>
+          </button>
+          <button class="action-btn audit-btn" onclick="quickAudit()">
+            <i class="fas fa-shield-alt"></i>
+            <span>Quick Audit</span>
+          </button>
+          <button class="action-btn archive-btn" onclick="archiveContract()">
+            <i class="fas fa-archive"></i>
+            <span>Archive</span>
+          </button>
+          <button class="action-btn generate-btn" onclick="generateCodeFromSpec()">
+            <i class="fas fa-code"></i>
+            <span>Generate Code - tester</span>
+          </button>
+
+          <div class="actions-separator">Demo Functions</div>
+
+          <!-- Demo buttons for AI function-calls -->
+          <button class="action-btn demo-btn demo-bugfix" onclick="demoBugFix()">
+            <i class="fas fa-bug"></i>
+            <span>BugFix</span>
+          </button>
+          <button class="action-btn demo-btn demo-security" onclick="demoSecurityAudit()">
+            <i class="fas fa-lock"></i>
+            <span>Security Audit</span>
+          </button>
+          <button class="action-btn demo-btn demo-gas" onclick="demoGasOptimization()">
+            <i class="fas fa-gas-pump"></i>
+            <span>Gas Optimization</span>
+          </button>
+          <button class="action-btn demo-btn demo-test" onclick="demoGenerateTests()">
+            <i class="fas fa-vial"></i>
+            <span>Generate Tests</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB CONTENT: My Contracts -->
+      <div id="my-contracts" class="tab-content">
+        <h2>My Contracts</h2>
+        <div class="search-bar">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" placeholder="Search contracts..." class="search-input">
+        </div>
+        <ul class="contract-list">
+          <!-- Example items... -->
+          <li class="contract-item">
+            <div class="contract-top-row">
+              <div class="contract-left-info">
+                <span class="contract-lang solidity">
+                  <i class="fas fa-file-code"></i> Solidity
+                </span>
+                <span class="contract-name">TokenSwap</span>
+              </div>
+              <div class="contract-actions">
+                <button class="icon-button" title="View Audit"><i class="fas fa-shield-alt"></i></button>
+                <button class="icon-button" title="Edit"><i class="fas fa-edit"></i></button>
+                <button class="icon-button" title="Share"><i class="fas fa-share-alt"></i></button>
+                <button class="icon-button" title="Delete"><i class="fas fa-trash-alt"></i></button>
+              </div>
+            </div>
+
+            <div class="deployments-toggle" onclick="toggleDeployments(this)">
+              <span>Deployments</span>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+            <ul class="network-list">
+              <li>
+                <div class="network-left">
+                  <span class="network-symbol">ETH</span>
+                  <span class="network-name">Ethereum Mainnet</span>
+                </div>
+                <div class="network-right">
+                  <i class="fas fa-rocket network-status-icon deployed" title="Deployed"></i>
+                  <i class="fas fa-check-circle network-status-icon verified" title="Verified"></i>
+                  <button class="icon-button copy-btn" title="Copy Address" onclick="copyToClipboard('0x123456789ABCDEF')">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                  <button class="interact-btn" onclick="addNotification('Interact via Agent clicked')">
+                    <i class="fas fa-plug"></i>
+                    Interact
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </li>
+          <!-- Additional contract example -->
+          <li class="contract-item">
+            <div class="contract-top-row">
+              <div class="contract-left-info">
+                <span class="contract-lang vyper">
+                  <i class="fas fa-file-code"></i> Vyper
+                </span>
+                <span class="contract-name">StakingContract</span>
+              </div>
+              <div class="contract-actions">
+                <button class="icon-button" title="View Audit"><i class="fas fa-shield-alt"></i></button>
+                <button class="icon-button" title="Edit"><i class="fas fa-edit"></i></button>
+                <button class="icon-button" title="Share"><i class="fas fa-share-alt"></i></button>
+                <button class="icon-button" title="Delete"><i class="fas fa-trash-alt"></i></button>
+              </div>
+            </div>
+
+            <div class="deployments-toggle" onclick="toggleDeployments(this)">
+              <span>Deployments</span>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+            <ul class="network-list">
+              <li>
+                <div class="network-left">
+                  <span class="network-symbol">OPT</span>
+                  <span class="network-name">Optimism</span>
+                </div>
+                <div class="network-right">
+                  <i class="fas fa-rocket network-status-icon deployed" title="Deployed"></i>
+                  <i class="fas fa-check-circle network-status-icon verified" title="Verified"></i>
+                  <button class="icon-button copy-btn" title="Copy Address" onclick="copyToClipboard('0xABCDEF123456789')">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                  <button class="interact-btn" onclick="addNotification('Interact via Agent clicked')">
+                    <i class="fas fa-plug"></i>
+                    Interact
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <!-- TAB CONTENT: Audit Report -->
+      <div id="audit-report" class="tab-content">
+        <div class="audit-header">
+          <h2>Audit Report</h2>
+          <div class="audit-search-container">
+            <div class="search-input-wrapper">
+              <i class="fas fa-search search-icon"></i>
+              <input type="text" id="contract-id-input" placeholder="Search Contract ID" class="search-input">
+            </div>
+            <button class="reaudit-button" onclick="requestReaudit()">
+              <i class="fas fa-sync-alt"></i>
+              <span>Request Re-audit</span>
+            </button>
+          </div>
+        </div>
+        
+        <div class="audit-status">
+          <span class="status-label">Status:</span>
+          <span class="status-value in-progress">In Progress</span>
+          <span class="audit-timestamp">Started: April 10, 2025 - 14:32 UTC</span>
+        </div>
+        
+        <div class="audit-findings">
+          <h3><i class="fas fa-exclamation-triangle"></i> Findings</h3>
+          <ul class="finding-list">
+            <li class="finding-item high">
+              <div class="finding-header">
+                <span class="severity">High</span>
+                <div class="finding-title">Reentrancy vulnerability in withdrawFunds() function</div>
+              </div>
+              <div class="finding-details">
+                <p>The withdrawFunds() function updates the state after making external calls, which can lead to reentrancy attacks.</p>
+                <div class="recommendation">
+                  <strong>Recommendation:</strong> Implement checks-effects-interactions pattern to prevent reentrancy.
+                </div>
+              </div>
+            </li>
+            <li class="finding-item medium">
+              <div class="finding-header">
+                <span class="severity">Medium</span>
+                <div class="finding-title">Unchecked return value for token transfer</div>
+              </div>
+              <div class="finding-details">
+                <p>The token transfer return value is not checked, which might lead to silent failures.</p>
+                <div class="recommendation">
+                  <strong>Recommendation:</strong> Always verify the return value of token transfers or use safe transfer methods.
+                </div>
+              </div>
+            </li>
+            <li class="finding-item low">
+              <div class="finding-header">
+                <span class="severity">Low</span>
+                <div class="finding-title">Unused state variable</div>
+              </div>
+              <div class="finding-details">
+                <p>There is an unused state variable which increases gas costs unnecessarily.</p>
+                <div class="recommendation">
+                  <strong>Recommendation:</strong> Remove or utilize the unused state variable.
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+        
+        <div class="audit-remarks">
+          <h3><i class="fas fa-comment-alt"></i> Remarks</h3>
+          <p>The contract generally follows good practices, but some issues need to be addressed before deployment to a production environment. We recommend implementing all suggested fixes and submitting for a re-audit before deploying to mainnet.</p>
+        </div>
+      </div>
+
+      <!-- TAB CONTENT: Template Dapps -->
+      <div id="template-dapps" class="tab-content">
+        <h2>Template Dapps</h2>
+        <div class="templates-container">
+          <div class="template-card">
+            <div class="template-icon"><i class="fas fa-exchange-alt"></i></div>
+            <div class="template-details">
+              <h3>Uniswap V2 Template</h3>
+              <p>Token swap and AMM functionality based on Uniswap V2</p>
+              <div class="template-tags">
+                <span class="template-tag">DEX</span>
+                <span class="template-tag">AMM</span>
+                <span class="template-tag">ERC20</span>
+              </div>
+              <button class="template-use-btn">Use Template</button>
+            </div>
+          </div>
+          
+          <div class="template-card">
+            <div class="template-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="template-details">
+              <h3>Aave Template</h3>
+              <p>Lending and borrowing protocol with variable interest rates</p>
+              <div class="template-tags">
+                <span class="template-tag">DeFi</span>
+                <span class="template-tag">Lending</span>
+                <span class="template-tag">Liquidation</span>
+              </div>
+              <button class="template-use-btn">Use Template</button>
+            </div>
+          </div>
+          
+          <div class="template-card">
+            <div class="template-icon"><i class="fas fa-coins"></i></div>
+            <div class="template-details">
+              <h3>Compound Template</h3>
+              <p>Algorithmic interest rate protocol with cToken implementation</p>
+              <div class="template-tags">
+                <span class="template-tag">DeFi</span>
+                <span class="template-tag">Interest</span>
+                <span class="template-tag">Governance</span>
+              </div>
+              <button class="template-use-btn">Use Template</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right half: Chat Column -->
+    <div class="chat-column" id="chatColumn">
+      <div class="process-stepper">
+        <div class="step active" data-step="1">
+          <div class="step-number">1</div>
+          <div class="step-title">Define</div>
+          <div class="step-description">Gather requirements</div>
+        </div>
+        <div class="step" data-step="2">
+          <div class="step-number">2</div>
+          <div class="step-title">Review</div>
+          <div class="step-description">Confirm specifications</div>
+        </div>
+        <div class="step" data-step="3">
+          <div class="step-number">3</div>
+          <div class="step-title">Develop</div>
+          <div class="step-description">Work with generated code</div>
+        </div>
+      </div>
+      <!-- Distinct container for language toggles + mode dropdown -->
+      <div class="chat-language-container">
+        <div class="chat-language-tabs">
+          <button class="language-toggle active" id="solidityToggle" onclick="setLanguage('solidity')">
+            <i class="fab fa-ethereum"></i> Solidity
+          </button>
+          <button class="language-toggle" id="vyperToggle" onclick="setLanguage('vyper')">
+            <i class="fas fa-snake"></i> Vyper
+          </button>
+          <button class="language-toggle" id="rustToggle" onclick="setLanguage('rust')">
+            <i class="fas fa-cog"></i> Rust
+          </button>
+        </div>
+        <!-- Mode + New Chat button -->
+        <div class="chat-mode-dropdown">
+          <select id="chatModeSelect" onchange="changeChatMode()">
+            <option value="advanced">Advanced Mode</option>
+            <option value="basic">Basic Mode</option>
+          </select>
+          <button id="newChatBtn" title="Start New Conversation" onclick="startNewChat()">
+            <i class="fas fa-plus"></i>
+            <span>New Chat</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Notification area inside chat -->
+      <div class="chat-notification-container" id="chatNotifications"></div>
+
+      <!-- The chat messages container -->
+      <div id="chat-container"></div>
+
+      <!-- Chat input form -->
+      <form id="input-form">
+        <div class="input-wrapper">
+          <input type="text" id="message-input" placeholder="Type your message here...">
+          <button type="submit" id="submit-btn">
+            <span id="button-text">Send</span>
+            <i class="fas fa-paper-plane"></i>
+            <div class="loading-spinner" id="loading-spinner"></div>
+          </button>
+        </div>
+        <div class="shortcut-hint">Press Ctrl+Enter to send</div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Example "other panels" (hidden initially) -->
+  <div class="placeholder-panel" id="examplePanel1" style="display:none;">
+    <h1>My Agents</h1>
+    <p>This panel would contain a list of your custom AI agents for contract interaction.</p>
+  </div>
+  <div class="placeholder-panel" id="examplePanel2" style="display:none;">
+    <h1>My Oracles</h1>
+    <p>This panel would contain your oracle configurations and deployments.</p>
+  </div>
+
+  <!-- Now, instead of one big script, reference your splitted files in order -->
+  <!-- (config.js is optional; if you don’t need it, remove it) -->
+  <script src="./js/config.js"></script>
+  <script src="./js/ui.js"></script>
+  <script src="./js/chat.js"></script>
+  <script src="./js/contract-actions.js"></script>
+  <script src="./js/main.js"></script>
+</body>
+</html>
