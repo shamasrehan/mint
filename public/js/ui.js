@@ -1105,116 +1105,124 @@ return {
 };
 })();
 
-// Export methods to window for compatibility with existing code
+// ui.js - Simplified to just expose global functions that HTML calls
+//          and internally delegate to UIController (declared in main.js).
+
+// Toggle the left sidebar
 window.toggleSidebar = function() {
-const sidebar = document.getElementById('sidebar');
-if (sidebar) {
-  sidebar.classList.toggle('collapsed');
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
   
+  sidebar.classList.toggle('collapsed');
   const isCollapsed = sidebar.classList.contains('collapsed');
   const icon = document.getElementById('sidebar-toggle-icon');
-  
   if (icon) {
     icon.classList.toggle('fa-chevron-left', !isCollapsed);
     icon.classList.toggle('fa-chevron-right', isCollapsed);
   }
-}
 };
 
+// Show a panel (generatorPanel, examplePanel1, etc.)
 window.showPanel = function(panelId, evt) {
-// Handle legacy usage by delegating to UIService
-if (UIService && typeof UIService.showPanel === 'function') {
-  // Update menu item active state if provided
-  if (evt && evt.currentTarget) {
-    document.querySelectorAll('.menu-item').forEach(item => {
-      item.classList.remove('active');
-    });
-    evt.currentTarget.classList.add('active');
+  // If UIController is defined, let it handle
+  if (window.UIController && typeof UIController.showPanel === 'function') {
+    if (evt && evt.currentTarget) {
+      // Mark the menu-item as active
+      document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      evt.currentTarget.classList.add('active');
+    }
+    UIController.showPanel(panelId);
+  } else {
+    console.warn('UIController.showPanel not available.');
   }
-  
-  UIService.showPanel(panelId);
-}
 };
 
+// Switch the top tabs inside the generator panel
 window.switchTab = function(e, tabId) {
-// Handle legacy usage by delegating to UIService
-if (UIService && typeof UIService.switchTab === 'function') {
-  // Update tab button active state if provided
-  if (e && e.currentTarget) {
-    document.querySelectorAll('.tab-button').forEach(button => {
-      button.classList.remove('active');
-    });
-    e.currentTarget.classList.add('active');
+  if (window.UIController && typeof UIController.switchTab === 'function') {
+    // Mark the tab button as active
+    if (e && e.currentTarget) {
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      e.currentTarget.classList.add('active');
+    }
+    UIController.switchTab(tabId);
+  } else {
+    console.warn('UIController.switchTab not available.');
   }
-  
-  UIService.switchTab(tabId);
-}
 };
 
+// Set the contract preview mode (Natural, JSON, Solidity, ABI)
 window.setViewMode = function(e, mode) {
-// Handle legacy usage by delegating to UIService
-if (UIService && typeof UIService.setViewMode === 'function') {
-  // Update view button active state if provided
-  if (e && e.currentTarget) {
-    document.querySelectorAll('.view-button').forEach(button => {
-      button.classList.remove('active');
-    });
-    e.currentTarget.classList.add('active');
+  if (window.UIController && typeof UIController.setViewMode === 'function') {
+    if (e && e.currentTarget) {
+      document.querySelectorAll('.view-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      e.currentTarget.classList.add('active');
+    }
+    UIController.setViewMode(mode);
+  } else {
+    console.warn('UIController.setViewMode not available.');
   }
-  
-  UIService.setViewMode(mode);
-}
 };
 
+// Set contract language
 window.setLanguage = function(lang) {
-// Handle legacy usage by delegating to UIService
-if (UIService && typeof UIService.setLanguage === 'function') {
-  UIService.setLanguage(lang);
-}
+  if (window.UIController && typeof UIController.setLanguage === 'function') {
+    UIController.setLanguage(lang);
+  } else {
+    console.warn('UIController.setLanguage not available.');
+  }
 };
 
+// Change chat mode (basic / advanced)
 window.changeChatMode = function() {
-const modeSelect = document.getElementById('chatModeSelect');
-if (!modeSelect) return;
-
-const mode = modeSelect.value;
-const generatorPanel = document.getElementById('generatorPanel');
-
-if (generatorPanel) {
-  // Remove existing mode classes
-  generatorPanel.classList.remove('basic-mode', 'advanced-mode');
+  const modeSelect = document.getElementById('chatModeSelect');
+  if (!modeSelect) return;
+  const mode = modeSelect.value;
   
-  // Add the selected mode class
-  generatorPanel.classList.add(`${mode}-mode`);
-  
-  // Update UI based on mode
-  if (UIService && typeof UIService.updateContractToggleButton === 'function') {
-    UIService.updateContractToggleButton(mode);
+  if (window.UIController && typeof UIController.updateChatMode === 'function') {
+    UIController.updateChatMode(mode);
+  } else {
+    // Fallback: just do some quick toggling
+    const generatorPanel = document.getElementById('generatorPanel');
+    if (generatorPanel) {
+      generatorPanel.classList.remove('basic-mode', 'advanced-mode');
+      generatorPanel.classList.add(`${mode}-mode`);
+    }
   }
-  
-  // Show notification
-  if (typeof addNotification === 'function') {
-    addNotification(`Switched to ${mode.charAt(0).toUpperCase() + mode.slice(1)} Mode`, 'info');
-  }
-}
 };
 
+// Show/hide contract preview (in basic mode)
 window.showContractPreview = function(show) {
-// Handle legacy usage by delegating to UIService
-if (UIService && typeof UIService.showContractPreview === 'function') {
-  UIService.showContractPreview(show);
-}
+  if (window.UIController && typeof UIController.showContractPreview === 'function') {
+    UIController.showContractPreview(show);
+  } else {
+    console.warn('UIController.showContractPreview not available.');
+  }
 };
 
-// Initialize the UI service when the DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-try {
-  UIService.init();
-  console.log('UI Service initialized');
-} catch (error) {
-  console.error('Error initializing UI Service:', error);
-}
+// Start new chat
+window.startNewChat = function() {
+  if (window.UIController && typeof UIController.startNewChat === 'function') {
+    UIController.startNewChat();
+  } else if (typeof window.startNewChat === 'function') {
+    // fallback to ChatService's startNewChat
+    window.startNewChat();
+  }
+};
+
+// On DOMContentLoaded, if you want to automatically init the UI, do so:
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.UIController && typeof UIController.init === 'function') {
+    UIController.init();
+  }
 });
+
 
 // Clean up on page unload
 window.addEventListener('beforeunload', function() {
