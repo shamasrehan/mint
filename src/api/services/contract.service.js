@@ -506,6 +506,63 @@ async function handlePhase2(userInput, conversation, selectedLanguage) {
   }
 }
 
+
+/**
+ * Enhanced Phase 2 transition: Generate requirements summary
+ */
+async function transitionToPhase2(conversation, selectedLanguage) {
+  try {
+    // Generate requirements summary
+    const requirementsSummary = await summarizeRequirements(conversation, selectedLanguage);
+    
+    return {
+      phase: 2,
+      conversation: [
+        ...conversation,
+        { 
+          role: "assistant", 
+          content: requirementsSummary,
+          metadata: { phase: 2, isRequirementsSummary: true }
+        }
+      ],
+      message: requirementsSummary,
+      contract: {
+        jsonSpec: { 
+          // Simple minimal spec to indicate we're in phase 2
+          contractName: extractContractName(requirementsSummary) || "SmartContract",
+          requirements: requirementsSummary
+        },
+        contracts: []
+      }
+    };
+  } catch (error) {
+    console.error("Error in Phase 2 transition:", error);
+    return {
+      phase: 1,
+      conversation: conversation,
+      message: "I encountered an issue while summarizing the requirements. Could you provide more details about what you're looking for?"
+    };
+  }
+}
+
+/**
+ * Extract contract name from requirements summary
+ */
+function extractContractName(summary) {
+  const contractNameMatch = summary.match(/contract\s+name:?\s*["']?([A-Za-z0-9]+)["']?/i);
+  if (contractNameMatch && contractNameMatch[1]) {
+    return contractNameMatch[1];
+  }
+  
+  // Try other patterns
+  const titleMatch = summary.match(/title:?\s*["']?([A-Za-z0-9]+)["']?/i);
+  if (titleMatch && titleMatch[1]) {
+    return titleMatch[1];
+  }
+  
+  return null;
+}
+
 /**
  * Transition to Phase 3: Generate final contract code
  */
@@ -517,9 +574,9 @@ async function transitionToPhase3(conversation, selectedLanguage) {
     // Look for the latest contract specification in the conversation
     for (let i = conversation.length - 1; i >= 0; i--) {
       const message = conversation[i];
-      if (message.role === "assistant" && message.content.includes("contract has been generated")) {
-        // We've found a reference to the generated contract
-        contractSpec = await summarizeRequirements(conversation, selectedLanguage);
+      if (message.role === "assistant" && message.content.includes("requirements summary")) {
+        // We've found a reference to the requirements summary
+        contractSpec = message.content;
         break;
       }
     }
@@ -529,30 +586,27 @@ async function transitionToPhase3(conversation, selectedLanguage) {
       contractSpec = await summarizeRequirements(conversation, selectedLanguage);
     }
     
-    // Generate the contract code
+    // Generate the contract JSON schema
     const contractJson = await generateFinalContractSpec(contractSpec, selectedLanguage);
-    const contractCode = await codeGenerator.generateContractCode(contractJson, selectedLanguage);
     
+    // For Phase 3, we don't automatically generate code
+    // Instead, we provide the JSON schema for the frontend to use
     return {
       phase: 3,
       conversation: [
         ...conversation,
-        { role: "user", content: "Please generate the final contract code." },
+        { role: "user", content: "Please generate the final contract JSON schema." },
         { 
           role: "assistant", 
-          content: "I've generated the final contract code based on your requirements. You can view it in the Contract Preview tab and make any necessary adjustments."
+          content: "I've generated the JSON schema for your contract based on your requirements. You can view it in the JSON tab and generate code when you're ready.",
+          metadata: { phase: 3, hasSchema: true }
         }
       ],
       contract: {
         jsonSpec: contractJson,
-        contracts: [
-          {
-            name: contractJson.contractName || "SmartContract",
-            content: contractCode
-          }
-        ]
+        contracts: [] // No generated code yet - this happens on demand in the UI
       },
-      message: "I've generated the final contract code based on your requirements. You can view it in the Contract Preview tab and make any necessary adjustments."
+      message: "I've generated the JSON schema for your contract based on your requirements. You can view it in the JSON tab and generate code when you're ready."
     };
   } catch (error) {
     console.error("Error in Phase 3 transition:", error);
@@ -560,15 +614,16 @@ async function transitionToPhase3(conversation, selectedLanguage) {
       phase: 2,
       conversation: [
         ...conversation,
-        { role: "user", content: "Please generate the final contract code." }
+        { role: "user", content: "Please generate the final contract JSON schema." }
       ],
-      message: "I encountered an issue while generating the final contract code. Could you provide more details or try again?"
+      message: "I encountered an issue while generating the contract JSON schema. Could you provide more details or try again?"
     };
   }
 }
 
+
 /**
- * Generate the final contract specification
+ * Generate the final contract specification from requirements
  */
 async function generateFinalContractSpec(requirementsSummary, selectedLanguage) {
   try {
@@ -600,11 +655,13 @@ async function generateFinalContractSpec(requirementsSummary, selectedLanguage) 
         return repairedJson;
       }
       
-      throw new Error("Failed to parse contract specification JSON");
+      // If repair fails, create a basic fallback schema
+      return createFallbackContractJson(requirementsSummary, selectedLanguage);
     }
   } catch (error) {
     console.error("Error generating final contract spec:", error);
-    throw error;
+    // Create fallback schema on error
+    return createFallbackContractJson(requirementsSummary, selectedLanguage);
   }
 }
 
@@ -717,8 +774,9 @@ If the user wants significant changes, guide them on how to articulate those cha
     };
   }
 }
+
 /**
- * Generate code from a JSON specification
+ * Enhanced code generation from JSON specification
  */
 async function generateCodeFromSpec(jsonSpec, language) {
   try {
@@ -734,7 +792,7 @@ async function generateCodeFromSpec(jsonSpec, language) {
     // Log the generation attempt
     console.log(`Generating ${language} code for contract: ${jsonSpec.contractName || 'Unnamed'}`);
     
-    // Call the appropriate generator
+    // Call the appropriate generator based on language
     let code = '';
     
     if (language === config.contractLanguages.SOLIDITY) {
@@ -761,6 +819,36 @@ async function generateCodeFromSpec(jsonSpec, language) {
 }
 
 /**
+ * Generate code from JSON specification
+ */
+async function generateCode(req, res, next) {
+  try {
+    const { jsonSpec, language } = req.body;
+    
+    if (!jsonSpec) {
+      return res.status(400).json({ error: 'Missing JSON specification' });
+    }
+    
+    const targetLanguage = language || selectedLanguage;
+    
+    // Generate code using the appropriate generator
+    const code = await contractService.generateCodeFromSpec(jsonSpec, targetLanguage);
+    
+    return res.json({ 
+      status: 'success', 
+      language: targetLanguage,
+      code
+    });
+  } catch (error) {
+    console.error("Error generating code:", error);
+    return res.status(500).json({ 
+      status: 'error',
+      error: error.message
+    });
+  }
+}
+
+/**
  * Handle transition between phases with proper data management
  * 
  * @param {number} targetPhase - The phase to transition to 
@@ -769,64 +857,53 @@ async function generateCodeFromSpec(jsonSpec, language) {
  * @param {string} selectedLanguage - Selected contract language
  * @returns {Object} Result with updated phase, conversation, etc.
  */
-async function handlePhaseTransition(targetPhase, conversation = [], currentPhase = 1, selectedLanguage) {
-  console.log(`Requested transition from phase ${currentPhase} to phase ${targetPhase}`);
-  
-  // Validate target phase
-  if (targetPhase < 1 || targetPhase > 3) {
-    return {
-      phase: currentPhase,
-      conversation,
-      error: "Invalid phase requested"
-    };
-  }
 
-  // Handle backwards transitions - clear data from future phases
-  if (targetPhase < currentPhase) {
-    // Find the last message from the target phase
-    let cutoffIndex = -1;
+
+/**
+ * Handle phase transitions
+ */
+async function handlePhaseTransition(req, res, next) {
+  try {
+    const { targetPhase } = req.body;
     
-    // Simplified phase marker detection
-    for (let i = conversation.length - 1; i >= 0; i--) {
-      const message = conversation[i];
-      // Look for phase markers in assistant messages
-      if (message.role === "assistant" && message.metadata && message.metadata.phase === targetPhase) {
-        cutoffIndex = i;
-        break;
+    if (targetPhase === undefined) {
+      return res.status(400).json({ error: 'Missing targetPhase parameter' });
+    }
+    
+    // Process phase transition
+    const result = await contractService.handlePhaseTransition(
+      targetPhase,
+      memoryConversation,
+      memoryPhase,
+      selectedLanguage
+    );
+
+    // Update memory only if there was no error
+    if (!result.error) {
+      memoryConversation = result.conversation || memoryConversation;
+      memoryPhase = result.phase || memoryPhase;
+    }
+
+    // Return response data
+    const responseData = {
+      phase: memoryPhase,
+      message: result.message || "",
+      contract: result.contract || null,
+      error: result.error || null,
+      debug: { 
+        conversationLength: memoryConversation.length,
+        selectedLanguage: selectedLanguage
       }
-    }
-    
-    // If phase marker found, truncate conversation
-    const trimmedConversation = cutoffIndex >= 0 
-      ? conversation.slice(0, cutoffIndex + 1) 
-      : [];
-      
-    return {
-      phase: targetPhase,
-      conversation: trimmedConversation,
-      message: `Returned to Phase ${targetPhase}. ${getPhaseDescription(targetPhase)}`,
-      contract: targetPhase >= 2 ? await retrieveCurrentContract(trimmedConversation, selectedLanguage) : null
     };
+    
+    return res.json(responseData);
+  } catch (error) {
+    console.error("Error in phase transition:", error);
+    return res.status(500).json({ 
+      error: error.message,
+      phase: memoryPhase
+    });
   }
-  
-  // Handle forward transitions
-  if (targetPhase > currentPhase) {
-    if (targetPhase === 2 && currentPhase === 1) {
-      // Transition to Phase 2 requires requirements summary
-      return await transitionToPhase2(conversation, selectedLanguage);
-    } 
-    else if (targetPhase === 3 && currentPhase === 2) {
-      // Transition to Phase 3 requires contract generation
-      return await transitionToPhase3(conversation, selectedLanguage);
-    }
-  }
-  
-  // Default - stay in current phase
-  return {
-    phase: currentPhase,
-    conversation,
-    message: "Unable to transition phases at this time"
-  };
 }
 
 /**
